@@ -988,11 +988,15 @@
     let finalLink = longLink; // fallback si raccourcissement échoue
 
     try {
-      // TinyURL — API publique, sans compte, sans clé
-      const res = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longLink));
-      const text = await res.text();
-      if (text && text.startsWith('https://tinyurl.com/')) {
-        finalLink = text.trim();
+      // Utilise l'API CleanURI — pas de CORS, fonctionne sans compte
+      const res = await fetch('https://cleanuri.com/api/v1/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'url=' + encodeURIComponent(longLink)
+      });
+      const data = await res.json();
+      if (data && data.result_url) {
+        finalLink = data.result_url;
       }
     } catch(e) {
       // Si l'API échoue, on garde le lien long silencieusement
