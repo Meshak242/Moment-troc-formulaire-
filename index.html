@@ -958,27 +958,54 @@
   // ══════════════════════════════
   // GÉNÉRATION DU LIEN
   // ══════════════════════════════
-  document.getElementById('generate-link-btn').addEventListener('click', function() {
-    const produit    = document.getElementById('cfg-produit').value.trim();
-    const business   = document.getElementById('cfg-business').value.trim();
-    const image      = document.getElementById('cfg-image').value.trim();
-    const formspree  = document.getElementById('cfg-formspree').value.trim();
-    const lienLead   = document.getElementById('cfg-lien-lead').value.trim();
+  document.getElementById('generate-link-btn').addEventListener('click', async function() {
+    const produit      = document.getElementById('cfg-produit').value.trim();
+    const business     = document.getElementById('cfg-business').value.trim();
+    const image        = document.getElementById('cfg-image').value.trim();
+    const formspree    = document.getElementById('cfg-formspree').value.trim();
+    const lienLead     = document.getElementById('cfg-lien-lead').value.trim();
     const lienBoutique = document.getElementById('cfg-lien-boutique').value.trim();
 
-    if (!produit) { alert('Indique le nom de ton produit.'); return; }
+    if (!produit)   { alert('Indique le nom de ton produit.'); return; }
     if (!formspree) { alert('Indique ton email Formspree.'); return; }
 
     const redirectUrl = redirectChoice === 'boutique' ? lienBoutique : lienLead;
     if (!redirectUrl) { alert('Indique le lien de redirection pour ton prospect.'); return; }
 
-    const cfg = { produit, business, image, formspree, redirect: redirectUrl, redirectType: redirectChoice };
+    const cfg     = { produit, business, image, formspree, redirect: redirectUrl, redirectType: redirectChoice };
     const encoded = encodeConfig(cfg);
     const baseUrl = window.location.href.split('?')[0];
-    const link = baseUrl + '?cfg=' + encoded;
+    const longLink = baseUrl + '?cfg=' + encoded;
 
-    document.getElementById('generated-link-input').value = link;
-    document.getElementById('generated-link-box').style.display = 'block';
+    // Affichage provisoire pendant le raccourcissement
+    const btn = document.getElementById('generate-link-btn');
+    btn.textContent = 'Génération en cours...';
+    btn.disabled = true;
+
+    const linkInput = document.getElementById('generated-link-input');
+    const linkBox   = document.getElementById('generated-link-box');
+
+    let finalLink = longLink; // fallback si raccourcissement échoue
+
+    try {
+      // Utilise l'API CleanURI — pas de CORS, fonctionne sans compte
+      const res = await fetch('https://cleanuri.com/api/v1/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'url=' + encodeURIComponent(longLink)
+      });
+      const data = await res.json();
+      if (data && data.result_url) {
+        finalLink = data.result_url;
+      }
+    } catch(e) {
+      // Si l'API échoue, on garde le lien long silencieusement
+    }
+
+    linkInput.value = finalLink;
+    linkBox.style.display = 'block';
+    btn.textContent = 'Générer mon lien prospect →';
+    btn.disabled = false;
   });
 
   document.getElementById('copy-link-btn').addEventListener('click', function() {
